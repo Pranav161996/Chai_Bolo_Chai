@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beverage Group Order</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .beverage-row { 
+      min-height: 64px; 
+      transition: all 0.2s ease;
+    }
+    .beverage-row:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .count-btn { 
+      min-width: 52px; 
+      min-height: 52px; 
+      font-size: 1.75rem;
+      font-weight: bold;
+      transition: all 0.15s ease;
+      border: 2px solid transparent;
+    }
+    .count-btn:active {
+      transform: scale(0.95);
+    }
+    .count-btn.plus {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    }
+    .count-btn.plus:hover {
+      background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+    .count-btn.minus {
+      background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+      box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+    }
+    .count-btn.minus:hover {
+      background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+    }
+    .count-display { 
+      min-width: 40px; 
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #1f2937;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .popup-bg { 
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      animation: fadeIn 0.2s ease;
+    }
+    .popup { 
+      min-width: 280px;
+      animation: slideUp 0.3s ease;
+    }
+    .sugar-btn {
+      transition: all 0.2s ease;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    .sugar-btn:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      transform: translateY(-1px);
+    }
+    .sugar-btn:active {
+      transform: scale(0.98);
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .beverage-label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #374151;
+    }
+    .summary-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .total-badge {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    .count-animation {
+      animation: countBounce 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    @keyframes countBounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .haptic-feedback {
+      animation: haptic 0.1s ease;
+    }
+    @keyframes haptic {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(0.98); }
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen items-center p-4">
+  <div class="w-full max-w-md mx-auto">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-white mb-2 drop-shadow-lg">☕ Group Order</h1>
+      <p class="text-white/80 text-sm">Quick beverage counter for break time</p>
+      <button id="new-order-btn" class="mt-4 px-6 py-2 bg-white/20 backdrop-blur-sm text-white rounded-full font-medium hover:bg-white/30 transition-all duration-200 border border-white/30">
+        🆕 New Order
+      </button>
+    </div>
+    
+    <div id="order-list" class="space-y-3 mb-6">
+      <!-- Beverage rows will be injected here -->
+    </div>
+    
+    <div class="summary-card rounded-2xl shadow-xl p-6">
+      <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+        📋 Summary
+      </h2>
+      <div id="summary-block" class="text-gray-800 text-base space-y-3">
+        <!-- Summary will be injected here -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- Popup -->
+  <div id="popup-bg" class="fixed inset-0 flex items-center justify-center z-50 hidden popup-bg">
+    <div id="popup" class="popup bg-white rounded-2xl shadow-2xl p-6 flex flex-col items-center">
+      <div id="popup-title" class="text-xl font-bold mb-6 text-gray-800"></div>
+      <div id="popup-options" class="flex flex-col gap-4 w-full"></div>
+      <button id="popup-cancel" class="mt-6 text-gray-500 font-medium hover:text-gray-700 transition-colors">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const beverages = [
+      { key: "T", label: "Tea", icon: "🫖" },
+      { key: "C", label: "Coffee", icon: "☕" },
+      { key: "LT", label: "Lemon Tea", icon: "🍋" },
+      { key: "BC", label: "Black Coffee", icon: "⚫" },
+      { key: "NM", label: "Normal Milk", icon: "🥛" },
+      { key: "BM", label: "Badam Milk", icon: "🥜" }
+    ];
+    
+    const sugars = [
+      { key: "with", label: "With Sugar", icon: "🍯" },
+      { key: "less", label: "Less Sugar", icon: "⚪" },
+      { key: "without", label: "Without Sugar", icon: "🚫" }
+    ];
+    
+    // State: { [bev.key]: { total: number, with: number, less: number, without: number } }
+    const state = {};
+    beverages.forEach(b => {
+      state[b.key] = { total: 0, with: 0, less: 0, without: 0 };
+    });
+
+    // Popup state
+    let currentPopupAction = null;
+    let currentBeverage = null;
+
+    function hapticFeedback() {
+      // Simulate haptic feedback on mobile
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }
+
+    function showPopup(title, beverage, action) {
+      currentBeverage = beverage;
+      currentPopupAction = action;
+      
+      document.getElementById('popup-title').textContent = title;
+      const opts = document.getElementById('popup-options');
+      opts.innerHTML = '';
+      
+      const options = action === 'add' ? sugars : sugars.filter(s => state[beverage.key][s.key] > 0);
+      
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'sugar-btn w-full py-4 rounded-xl text-lg font-semibold text-white flex items-center justify-center gap-3';
+        btn.innerHTML = `<span>${opt.icon}</span><span>${opt.label}</span>`;
+        btn.onclick = () => handlePopupSelection(opt.key);
+        opts.appendChild(btn);
+      });
+      
+      document.getElementById('popup-bg').classList.remove('hidden');
+    }
+
+    function handlePopupSelection(sugarKey) {
+      hapticFeedback();
+      
+      if (currentPopupAction === 'add') {
+        state[currentBeverage.key][sugarKey]++;
+        state[currentBeverage.key].total++;
+      } else if (currentPopupAction === 'remove') {
+        if (state[currentBeverage.key][sugarKey] > 0) {
+          state[currentBeverage.key][sugarKey]--;
+          state[currentBeverage.key].total--;
+        }
+      }
+      
+      hidePopup();
+      renderOrderList();
+      renderSummary();
+    }
+
+    function hidePopup() {
+      document.getElementById('popup-bg').classList.add('hidden');
+      currentPopupAction = null;
+      currentBeverage = null;
+    }
+
+    // Event listeners
+    document.getElementById('popup-cancel').onclick = hidePopup;
+    document.getElementById('popup-bg').onclick = function(e) {
+      if (e.target === this) hidePopup();
+    };
+    
+    // New Order button
+    document.getElementById('new-order-btn').onclick = async () => {
+      const total = beverages.reduce((sum, b) => sum + state[b.key].total, 0);
+      if (total > 0) {
+        const confirmed = await showConfirmationPopup();
+        if (confirmed) {
+          resetOrder();
+        }
+      } else {
+        resetOrder();
+      }
+    };
+
+    function showConfirmationPopup() {
+      return new Promise((resolve) => {
+        const confirmBg = document.createElement('div');
+        confirmBg.className = 'fixed inset-0 flex items-center justify-center z-50 popup-bg';
+        confirmBg.innerHTML = `
+          <div class="popup bg-white rounded-2xl shadow-2xl p-6 flex flex-col items-center">
+            <div class="text-xl font-bold mb-4 text-gray-800">⚠️ Clear Order?</div>
+            <div class="text-gray-600 mb-6 text-center">This will reset all drink counts to zero.</div>
+            <div class="flex gap-3 w-full">
+              <button id="confirm-cancel" class="flex-1 py-3 rounded-xl text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
+                Cancel
+              </button>
+              <button id="confirm-reset" class="flex-1 py-3 rounded-xl text-lg font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors">
+                Clear All
+              </button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(confirmBg);
+        
+        confirmBg.querySelector('#confirm-cancel').onclick = () => {
+          document.body.removeChild(confirmBg);
+          resolve(false);
+        };
+        
+        confirmBg.querySelector('#confirm-reset').onclick = () => {
+          document.body.removeChild(confirmBg);
+          resolve(true);
+        };
+        
+        confirmBg.onclick = (e) => {
+          if (e.target === confirmBg) {
+            document.body.removeChild(confirmBg);
+            resolve(false);
+          }
+        };
+      });
+    }
+
+    function resetOrder() {
+      hapticFeedback();
+      beverages.forEach(b => {
+        state[b.key] = { total: 0, with: 0, less: 0, without: 0 };
+      });
+      renderOrderList();
+      renderSummary();
+    }
+
+    function renderOrderList() {
+      const orderList = document.getElementById('order-list');
+      orderList.innerHTML = '';
+      
+      beverages.forEach(bev => {
+        const row = document.createElement('div');
+        row.className = 'beverage-row flex items-center justify-between card rounded-xl shadow-lg px-4 py-3';
+        
+        // Label with icon
+        const label = document.createElement('span');
+        label.className = 'beverage-label flex items-center gap-2';
+        label.innerHTML = `<span>${bev.icon}</span><span>${bev.label}</span>`;
+        
+        // - button
+        const minus = document.createElement('button');
+        minus.className = `count-btn minus rounded-full text-white focus:outline-none ${state[bev.key].total > 0 ? '' : 'opacity-50'}`;
+        minus.textContent = '–';
+        minus.onclick = () => {
+          hapticFeedback();
+          if (state[bev.key].total > 0) {
+            const sugarTypes = sugars.filter(s => state[bev.key][s.key] > 0);
+            if (sugarTypes.length === 1) {
+              // Auto-decrement if only one type
+              state[bev.key][sugarTypes[0].key]--;
+              state[bev.key].total--;
+              renderOrderList();
+              renderSummary();
+            } else if (sugarTypes.length > 1) {
+              // Show popup to choose which to decrement
+              showPopup(`Remove from ${bev.label}:`, bev, 'remove');
+            }
+          }
+        };
+        
+        // Count display
+        const count = document.createElement('span');
+        count.className = 'count-display text-center';
+        count.textContent = state[bev.key].total;
+        if (state[bev.key].total > 0) {
+          count.classList.add('count-animation');
+          setTimeout(() => count.classList.remove('count-animation'), 300);
+        }
+        
+        // + button
+        const plus = document.createElement('button');
+        plus.className = 'count-btn plus rounded-full text-white focus:outline-none';
+        plus.textContent = '+';
+        plus.onclick = () => {
+          hapticFeedback();
+          showPopup(`Add to ${bev.label}:`, bev, 'add');
+        };
+        
+        row.appendChild(label);
+        row.appendChild(minus);
+        row.appendChild(count);
+        row.appendChild(plus);
+        orderList.appendChild(row);
+      });
+    }
+
+    function renderSummary() {
+      const block = document.getElementById('summary-block');
+      let total = 0;
+      beverages.forEach(b => { total += state[b.key].total; });
+      
+      let html = '';
+      
+      if (total > 0) {
+        html = `<div class="total-badge inline-block px-4 py-2 rounded-full text-white font-bold text-lg mb-4">
+          Total: ${total} drinks
+        </div>`;
+        
+        beverages.forEach(b => {
+          if (state[b.key].total > 0) {
+            html += `<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center gap-2">
+                <span>${b.icon}</span>
+                <span class="font-semibold">${b.label}:</span>
+                <span class="font-bold text-blue-600">${state[b.key].total}</span>
+              </div>`;
+            
+            // Only show sugar breakdown if there are different sugar types
+            const sugarCounts = [];
+            if (state[b.key].with > 0) sugarCounts.push(`🍯 ${state[b.key].with}`);
+            if (state[b.key].less > 0) sugarCounts.push(`⚪ ${state[b.key].less}`);
+            if (state[b.key].without > 0) sugarCounts.push(`🚫 ${state[b.key].without}`);
+            
+            if (sugarCounts.length > 0) {
+              html += `<div class="text-gray-500 text-sm">${sugarCounts.join(' ')}</div>`;
+            }
+            
+            html += '</div>';
+          }
+        });
+      } else {
+        html = '<div class="text-center text-gray-400 py-8">' +
+          '<div class="text-4xl mb-2">☕</div>' +
+          '<div>No drinks selected yet</div>' +
+          '<div class="text-sm mt-1">Tap + to start ordering</div>' +
+          '</div>';
+      }
+      
+      block.innerHTML = html;
+    }
+
+    // Initial render
+    renderOrderList();
+    renderSummary();
+  </script>
+</body>
+</html> 
