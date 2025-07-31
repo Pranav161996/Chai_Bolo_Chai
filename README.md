@@ -43,7 +43,7 @@ A mobile-responsive web application for quickly taking group hot beverage orders
    git clone https://github.com/Pranav161996/Chai_Bolo_Chai.git
    ```
 
-2. Open `beverage-order.html` in your browser
+2. Open `index.html` in your browser
 
 3. Start taking orders! 🎉
 
